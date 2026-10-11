@@ -43,4 +43,9 @@ export default async (req: Request) => {
 
 export const config: Config = {
   path: "/stats",
+  rateLimit: {
+    windowLimit: 10,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  },
 };
