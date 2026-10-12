@@ -9,6 +9,7 @@ import {
 } from "./model";
 import { isUlid } from "./ulid";
 import { migrateSession } from "./migrate";
+import { redactCommand } from "./redact";
 import { Logger, silentLogger } from "../log";
 
 /**
@@ -131,6 +132,48 @@ export class SessionStore {
       this.log.error("store: no se pudo escribir el índice reconstruido", error);
     }
     return index;
+  }
+
+  /**
+   * Tapa los secretos de los comandos de terminal en las sesiones guardadas
+   * antes de 0.2.1, que los tienen tal cual se escribieron. Solo toca
+   * `terminal.recentCommands`; el resto del archivo queda igual. Devuelve
+   * cuántos archivos reescribió.
+   */
+  async redactSavedCommands(): Promise<number> {
+    let files: string[];
+    try {
+      files = await fs.readdir(this.sessionsDir);
+    } catch (error) {
+      if (!isNotFound(error)) {
+        this.log.error("store: no se pudo listar la carpeta de sesiones", error);
+      }
+      return 0;
+    }
+    let rewritten = 0;
+    for (const file of files) {
+      if (!file.endsWith(".json") || !isUlid(file.slice(0, -".json".length))) {
+        continue;
+      }
+      const target = path.join(this.sessionsDir, file);
+      try {
+        const raw = JSON.parse(await fs.readFile(target, "utf8")) as { terminal?: { recentCommands?: unknown } };
+        const commands = raw.terminal?.recentCommands;
+        if (!Array.isArray(commands)) {
+          continue;
+        }
+        const redacted = commands.map((c) => (typeof c === "string" ? redactCommand(c) : c));
+        if (redacted.every((c, i) => c === commands[i])) {
+          continue;
+        }
+        raw.terminal!.recentCommands = redacted;
+        await writeAtomic(target, JSON.stringify(raw, null, 2));
+        rewritten++;
+      } catch (error) {
+        this.log.warn(`store: no se pudieron tapar los comandos de ${file} (${String(error)})`);
+      }
+    }
+    return rewritten;
   }
 
   private async writeIndex(index: SessionIndex): Promise<void> {

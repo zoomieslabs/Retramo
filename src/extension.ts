@@ -38,6 +38,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   log = createLogger(channel);
 
   const store = new SessionStore(context.globalStorageUri.fsPath, log);
+  void store.redactSavedCommands().then((n) => {
+    if (n > 0) {
+      log.info(`store: se taparon secretos en los comandos de ${n} sesiones anteriores`);
+    }
+  });
   const terminal = new TerminalTracker(log);
   const statusBar = new ReturnStatusBar();
   context.subscriptions.push(terminal, statusBar);

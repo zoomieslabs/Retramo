@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { MAX_TERMINAL_COMMANDS, Session } from "../session/model";
+import { redactCommand } from "../session/redact";
 import type { Logger } from "../log";
 
 // `onDidStartTerminalShellExecution` existe desde VS Code 1.93. Como el
@@ -18,8 +19,9 @@ interface WindowWithShellIntegration {
 
 /**
  * Registra los últimos comandos ejecutados en la terminal integrada a medida
- * que ocurren. Nunca guarda la salida. Si la API no existe, `capture()`
- * devuelve `undefined`.
+ * que ocurren. Nunca guarda la salida, y los secretos que tenga el comando
+ * (claves, tokens, contraseñas) se tapan antes de guardarlo. Si la API no
+ * existe, `capture()` devuelve `undefined`.
  */
 export class TerminalTracker implements vscode.Disposable {
   private readonly commands: string[] = [];
@@ -43,7 +45,7 @@ export class TerminalTracker implements vscode.Disposable {
     if (!trimmed) {
       return;
     }
-    this.commands.push(trimmed);
+    this.commands.push(redactCommand(trimmed));
     while (this.commands.length > MAX_TERMINAL_COMMANDS) {
       this.commands.shift();
     }

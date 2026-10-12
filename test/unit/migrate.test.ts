@@ -140,5 +140,9 @@ describe("cambios congelados al volver", () => {
     expect(session.away?.changes).toBeUndefined();
     expect(session.away?.endedAt).toBe(v1.createdAt);
   });
-});
 
+  it("tapa secretos en los comandos de sesiones viejas", () => {
+    const session = migrateSession({ ...v1, terminal: { recentCommands: ["export API_KEY=abc", "npm test"] } });
+    expect(session?.terminal?.recentCommands).toEqual(["export API_KEY=***", "npm test"]);
+  });
+});

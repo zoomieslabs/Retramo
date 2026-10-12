@@ -107,7 +107,7 @@ This is a real session file, opened in VS Code:
 
 **File contents and diffs are never saved.** The session only holds paths relative to the workspace, positions, commit hashes and SHA-256 hashes of untracked files. The one place your uncommitted work is copied to is the `git stash create` snapshot, which lives in your own repository's `.git` folder and never leaves your machine.
 
-Terminal commands are recorded as you run them, without their output.
+Terminal commands are recorded as you run them, without their output. Anything that looks like a secret is masked with `***` before it's saved: values of variables like `API_KEY=` or `GITHUB_TOKEN=`, `Authorization` headers, `--token` and `--password` flags, passwords in URLs, and keys with a known format (OpenAI, Anthropic, GitHub, AWS, Stripe and others). Sessions saved by earlier versions are cleaned the next time Retramo starts.
 
 ## Local by default
 
@@ -122,7 +122,7 @@ If you set `retramo.summary.provider` to `openai`, `anthropic` or `ollama`, open
 - what you were in the middle of
 - the workspace name, your active file and line, your open files
 - your branch, the files you had uncommitted, your last commit message
-- your recent terminal commands
+- your recent terminal commands, with secrets masked
 - while you were away: how long, branch changes, new commits (subject and author), changed files (path and status)
 
 **What never gets sent:** file contents, the snapshot, commit hashes, the hashes of your untracked files, absolute paths, or session ids.

@@ -1,5 +1,6 @@
 import { AwayChanges, Baseline, clampIntent, MAX_UNTRACKED, MAX_WATCHED_PATHS, Session, SCHEMA_VERSION } from "./model";
 import { isObjectId } from "../git/objectId";
+import { redactCommand } from "./redact";
 
 /**
  * Convierte lo que haya en disco a una sesión v2 válida. Nunca reescribe el
@@ -9,6 +10,8 @@ import { isObjectId } from "../git/objectId";
  *   descarta.
  * - Los hashes de la línea de base se validan: uno inválido se descarta como
  *   si no existiera, para que nunca llegue a git.
+ * - Los comandos de la terminal se vuelven a tapar: las sesiones guardadas
+ *   antes de 0.2.1 los tienen tal cual se escribieron.
  * - Devuelve `undefined` si el JSON no tiene la forma mínima de una sesión.
  */
 export function migrateSession(raw: unknown): Session | undefined {
@@ -46,7 +49,7 @@ export function migrateSession(raw: unknown): Session | undefined {
     }
   }
   if (isRecord(raw.terminal)) {
-    session.terminal = { recentCommands: strings(raw.terminal.recentCommands) };
+    session.terminal = { recentCommands: strings(raw.terminal.recentCommands).map(redactCommand) };
     if (typeof raw.terminal.cwd === "string") {
       session.terminal.cwd = raw.terminal.cwd;
     }
