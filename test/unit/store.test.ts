@@ -112,4 +112,20 @@ describe("SessionStore", () => {
     await fs.rm(store.indexPath);
     expect((await store.list()).map((e) => e.id)).toEqual([a.id]);
   });
+
+  it("tapa secretos en los comandos ya guardados y deja el resto del archivo igual", async () => {
+    const leaky = makeSession({ terminal: { recentCommands: ["export API_KEY=abc", "npm test"], cwd: "/w" } });
+    const clean = makeSession({ terminal: { recentCommands: ["npm test"] } });
+    await fs.mkdir(store.sessionsDir, { recursive: true });
+    await fs.writeFile(store.sessionPath(leaky.id), JSON.stringify(leaky));
+    await store.save(clean);
+    const cleanBefore = await fs.readFile(store.sessionPath(clean.id), "utf8");
+
+    expect(await store.redactSavedCommands()).toBe(1);
+    const raw = await fs.readFile(store.sessionPath(leaky.id), "utf8");
+    expect(raw).not.toContain("abc");
+    expect(JSON.parse(raw)).toEqual({ ...leaky, terminal: { recentCommands: ["export API_KEY=***", "npm test"], cwd: "/w" } });
+    expect(await fs.readFile(store.sessionPath(clean.id), "utf8")).toBe(cleanBefore);
+    expect(await store.redactSavedCommands()).toBe(0);
+  });
 });
