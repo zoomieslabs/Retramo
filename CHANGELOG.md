@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+Same as 0.2.1. Comments in the compiled code no longer contain example credentials, which Open VSX's secret scanner flagged.
+
 ## 0.2.1
 
 - **Security:** secrets in terminal commands are masked with `***` before they're saved, so they never reach the session file or the AI summary: values of variables like `API_KEY=`, `Authorization` headers, `--token` and `--password` flags, passwords in URLs, and keys with a known format. Sessions saved by earlier versions are cleaned the next time Retramo starts.
