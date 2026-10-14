@@ -31,31 +31,31 @@ const TOKEN_SHAPES: RegExp[] = [
 type Replacement = string | ((match: string, ...groups: string[]) => string);
 
 const RULES: [RegExp, Replacement][] = [
-  // NAME=valor (bash, zsh, `export`, prefijo de un comando).
+  // Asignación de una variable con nombre sensible (bash, zsh, `export`, prefijo de un comando).
   [new RegExp(String.raw`\b([A-Za-z_][A-Za-z0-9_]*${SECRET_WORD}[A-Za-z0-9_]*)=${QUOTED_OR_WORD}`, "gi"), `$1=${REDACTED}`],
-  // fish: set -x NAME valor
+  // La misma asignación en fish, con `set`.
   [new RegExp(String.raw`\b(set\s+(?:-\w+\s+)*[A-Za-z0-9_]*${SECRET_WORD}[A-Za-z0-9_]*\s+)${QUOTED_OR_WORD}`, "gi"), `$1${REDACTED}`],
-  // PowerShell: $env:NAME = valor
+  // La misma asignación en PowerShell, con `$env:`.
   [new RegExp(String.raw`(\$env:[A-Za-z0-9_]*${SECRET_WORD}[A-Za-z0-9_]*\s*=\s*)${QUOTED_OR_WORD}`, "gi"), `$1${REDACTED}`],
-  // Headers: Authorization: Bearer x, X-Api-Key: x. Se conserva el esquema.
+  // Headers de autorización o de clave. Se conserva el esquema (Bearer, Basic).
   [
     new RegExp(String.raw`\b((?:proxy-)?authorization|[\w-]*${SECRET_WORD}[\w-]*)(\s*:\s*)(?:(bearer|basic|token|bot|digest)\s+)?[^\s"']+`, "gi"),
     (_m, name: string, sep: string, scheme?: string) => `${name}${sep}${scheme ? `${scheme} ` : ""}${REDACTED}`,
   ],
-  // --token x, --api-key=x, --password "x". No los que nombran un archivo o stdin.
+  // Flags con nombre sensible, con espacio o con `=`. No los que nombran un archivo o stdin.
   [
     new RegExp(String.raw`(\s--?[\w-]*${SECRET_WORD}[\w-]*(?<!-file|-stdin|-path|-env))(=|\s+)(?![-<>|&;])${QUOTED_OR_WORD}`, "gi"),
     `$1$2${REDACTED}`,
   ],
-  // curl -u usuario:clave, --user usuario:clave
+  // Usuario y contraseña pasados con `-u` o `--user`: se tapa lo que sigue a los dos puntos.
   [/(\s(?:-u|--user)[\s=]*["']?[^\s:"']+):[^\s"']+/g, `$1:${REDACTED}`],
-  // Credenciales en una URL: scheme://usuario:clave@host
+  // Credenciales dentro de una URL: se tapa la contraseña antes de la arroba.
   [/(\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@"']+):[^/\s@"']+@/gi, `$1:${REDACTED}@`],
-  // Parámetros: ?token=x&api_key=x&sig=x
+  // Parámetros de una URL con nombre sensible.
   [new RegExp(String.raw`([?&][\w-]*(?:${SECRET_WORD}|sig|key)[\w-]*=)[^&\s"'#]+`, "gi"), `$1${REDACTED}`],
 ];
 
-// mysql -pclave: -p solo significa contraseña en estos clientes.
+// La contraseña pegada a `-p`: solo significa eso en los clientes de MySQL.
 const MYSQL = /\b(?:mysql|mariadb|mysqldump|mysqladmin)\b/;
 const MYSQL_PASSWORD = /(\s-p)[^\s]+/g;
 
