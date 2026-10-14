@@ -7,7 +7,7 @@
     "theme": "dark"
   },
   "description": "%description%",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "zoomieslabs",
   "license": "MIT",
   "author": {
@@ -164,5 +164,8 @@
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
   }
 }
