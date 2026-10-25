@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.3
+
+- **Security:** with `retramo.summary.includeDiffs`, keys with a known format (`sk-...`, `ghp_...`, `AKIA...`) are masked inside the diff too, and `.npmrc`, `.netrc`, `.pypirc`, `.p12`, `.pfx`, `.keystore`, `.jks` and `.tfvars` files are never sent.
+- **Security:** a key pasted by mistake into "What were you in the middle of?" is masked before it's saved or sent, including in sessions saved by earlier versions. If a summary provider echoes your key in an error message, it's masked before it reaches the Retramo log.
+- **Telemetry:** "I'm back" is only counted after you opt in. Nothing from before is sent.
+- Anthropic summaries use Claude Opus 5.5, which costs less than Opus 5.
+- Fixed: two sessions saved at the same moment could drop one of them from the history.
+- Fixed: files whose name starts with `..` were left out of the session.
+
+## 0.2.2
+
+Same as 0.2.1. Comments in the compiled code no longer contain example credentials, which Open VSX's secret scanner flagged.
+
 ## 0.2.1
 
 - **Security:** secrets in terminal commands are masked with `***` before they're saved, so they never reach the session file or the AI summary: values of variables like `API_KEY=`, `Authorization` headers, `--token` and `--password` flags, passwords in URLs, and keys with a known format. Sessions saved by earlier versions are cleaned the next time Retramo starts.

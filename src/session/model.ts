@@ -1,3 +1,5 @@
+import { redactTokens } from "./redact";
+
 export type SessionTrigger = "manual" | "idle";
 
 export const SCHEMA_VERSION = 2;
@@ -99,9 +101,12 @@ export const HISTORY_LIMIT = 20;
 export const MAX_UNTRACKED = 200;
 export const MAX_WATCHED_PATHS = 200;
 
-/** Recorta la intención al máximo y descarta la vacía. */
+/**
+ * Recorta la intención al máximo y descarta la vacía. Una clave pegada por
+ * error se tapa antes de recortar, para que el corte no la deje irreconocible.
+ */
 export function clampIntent(text: string | undefined): string | undefined {
-  const trimmed = text?.trim();
+  const trimmed = text === undefined ? undefined : redactTokens(text).trim();
   if (!trimmed) {
     return undefined;
   }

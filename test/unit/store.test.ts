@@ -72,6 +72,22 @@ describe("SessionStore", () => {
     expect((await store.get(session.id))?.summary?.text).toBe("x");
   });
 
+  it("guardados en paralelo no pierden entradas del índice", async () => {
+    // La extensión guarda en paralelo: el regreso, el resumen y el flush del watcher.
+    const sessions = Array.from({ length: 10 }, () => makeSession());
+    await Promise.all(sessions.map((s) => store.save(s)));
+    expect((await store.list()).map((e) => e.id).sort()).toEqual(sessions.map((s) => s.id).sort());
+  });
+
+  it("tapar comandos viejos no pisa un guardado que ocurre al mismo tiempo", async () => {
+    const session = makeSession({ terminal: { recentCommands: ["export API_KEY=abc"] } });
+    await fs.mkdir(store.sessionsDir, { recursive: true });
+    await fs.writeFile(store.sessionPath(session.id), JSON.stringify(session));
+    const updated = { ...session, intent: "nuevo", terminal: { recentCommands: ["npm test"] } };
+    await Promise.all([store.redactSavedCommands(), store.save(updated)]);
+    expect((await store.get(session.id))?.intent).toBe("nuevo");
+  });
+
   it("no corrompe el índice si falla la escritura de la sesión", async () => {
     const first = makeSession();
     await store.save(first);

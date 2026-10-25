@@ -1,5 +1,6 @@
 import { Session } from "../session/model";
 import type { AwayChanges } from "../changes/compute";
+import { redactTokens } from "../session/redact";
 
 export interface SummaryProvider {
   name: string; // "byok:openai" | "byok:anthropic" | "local:ollama"
@@ -93,11 +94,14 @@ export class SummaryError extends Error {
   }
 }
 
-/** Lee el cuerpo de una respuesta HTTP fallida sin explotar. */
+/**
+ * Lee el cuerpo de una respuesta HTTP fallida sin explotar. Termina en el log:
+ * si el proveedor repite la clave en el mensaje de error, se tapa.
+ */
 export async function describeHttpError(response: Response): Promise<string> {
   let body = "";
   try {
-    body = (await response.text()).slice(0, 300);
+    body = redactTokens(await response.text()).slice(0, 300);
   } catch {
     // ignorar
   }

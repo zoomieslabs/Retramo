@@ -59,7 +59,7 @@ export function toWorkspaceRelative(uri: vscode.Uri, workspaceRoot: string): str
     return undefined;
   }
   const relative = path.relative(workspaceRoot, uri.fsPath);
-  if (relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) {
+  if (relative === "" || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return undefined;
   }
   return relative.split(path.sep).join("/");

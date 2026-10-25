@@ -37,7 +37,7 @@ export function watchAway(root: string, log: AwayLog): vscode.Disposable {
       return;
     }
     const relative = path.relative(root, uri.fsPath);
-    if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    if (relative && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) {
       log.add(relative.split(path.sep).join("/"));
     }
   };

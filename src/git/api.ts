@@ -66,6 +66,6 @@ export function pickRepository(
 /** `target` es `root` o está dentro. Con `either`, también vale al revés. */
 function isInside(target: string, root: string, either = false): boolean {
   const relative = path.relative(root, target);
-  const inside = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  const inside = relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
   return inside || (either && isInside(root, target));
 }

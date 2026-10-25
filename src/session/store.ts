@@ -22,10 +22,14 @@ import { Logger, silentLogger } from "../log";
  * Toda escritura es atómica (archivo temporal + rename) para que un fallo a
  * mitad de camino nunca deje un JSON corrupto. Si el índice se pierde o se
  * corrompe, se reconstruye a partir de los archivos de sesión.
+ *
+ * Las escrituras van de a una: `save` lee y reescribe el índice, y dos en
+ * paralelo (el regreso y el resumen, por ejemplo) se pisarían una entrada.
  */
 export class SessionStore {
   readonly sessionsDir: string;
   readonly indexPath: string;
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
     readonly dir: string,
@@ -39,7 +43,11 @@ export class SessionStore {
     return path.join(this.sessionsDir, `${id}.json`);
   }
 
-  async save(session: Session): Promise<void> {
+  save(session: Session): Promise<void> {
+    return this.exclusive(() => this.write(session));
+  }
+
+  private async write(session: Session): Promise<void> {
     await fs.mkdir(this.sessionsDir, { recursive: true });
     // 1. La sesión primero. Si esto falla, el índice queda intacto.
     await writeAtomic(this.sessionPath(session.id), JSON.stringify(session, null, 2));
@@ -140,7 +148,11 @@ export class SessionStore {
    * `terminal.recentCommands`; el resto del archivo queda igual. Devuelve
    * cuántos archivos reescribió.
    */
-  async redactSavedCommands(): Promise<number> {
+  redactSavedCommands(): Promise<number> {
+    return this.exclusive(() => this.redactCommandsInFiles());
+  }
+
+  private async redactCommandsInFiles(): Promise<number> {
     let files: string[];
     try {
       files = await fs.readdir(this.sessionsDir);
@@ -174,6 +186,13 @@ export class SessionStore {
       }
     }
     return rewritten;
+  }
+
+  /** Corre `fn` cuando terminó la escritura anterior, haya fallado o no. */
+  private exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(fn, fn);
+    this.queue = run.catch(() => undefined);
+    return run;
   }
 
   private async writeIndex(index: SessionIndex): Promise<void> {

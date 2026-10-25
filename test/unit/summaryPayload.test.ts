@@ -4,6 +4,7 @@ import { computeAwayChanges } from "../../src/changes/compute";
 import { collectDiffs, looksSecret, MAX_DIFF_CHARS, TRUNCATED_MARK } from "../../src/changes/diffs";
 import { buildPayload, buildPrompt } from "../../src/summary/provider";
 import { Session } from "../../src/session/model";
+import { REDACTED } from "../../src/session/redact";
 import { makeSession } from "./helpers";
 import { makeRepo, TestRepo } from "./gitRepo";
 
@@ -74,6 +75,18 @@ describe("diffs (solo con includeDiffs)", () => {
     expect(changes.files.map((f) => f.path)).toContain(".env"); // figura en la lista, sin contenido
   });
 
+  it("tapa claves con formato conocido dentro del código", async () => {
+    repo = await makeRepo();
+    const session = await awaySession(repo);
+    // Armada por partes para que ningún escáner la tome por real.
+    const key = "sk-ant-" + "a1B2c3D4".repeat(5);
+    await repo.write("src/a.ts", `const key = "${key}";\n`);
+    const changes = await computeAwayChanges({ session, git: repo.git, repoRoot: repo.root });
+    const diffs = await collectDiffs(repo.git, session.baseline!.head, changes.files);
+    expect(diffs).toContain(`const key = "${REDACTED}"`);
+    expect(diffs).not.toContain(key);
+  });
+
   it("trunca a 20.000 caracteres", async () => {
     repo = await makeRepo();
     const session = await awaySession(repo);
@@ -111,6 +124,14 @@ describe("diffs (solo con includeDiffs)", () => {
     ["home/.ssh/id_ed25519", true],
     ["aws/credentials", true],
     ["src/secrets.ts", true],
+    [".npmrc", true],
+    ["home/.netrc", true],
+    [".pypirc", true],
+    ["certs/client.p12", true],
+    ["certs/client.pfx", true],
+    ["android/release.keystore", true],
+    ["app.jks", true],
+    ["infra/prod.tfvars", true],
     ["src/environment.ts", false],
     ["src/keyboard.ts", false],
     ["README.md", false],

@@ -8,7 +8,7 @@ import { makeSession } from "./helpers";
 const IDLE_MS = 20 * 60_000;
 const T0 = Date.parse("2026-10-06T10:00:00.000Z");
 
-function setup() {
+function setup(overrides: Partial<AwayDeps> = {}) {
   let recordings = 0;
   const made: (AwayRecording & { stopped: boolean; baseline: Baseline })[] = [];
   const saved: SaveInput[] = [];
@@ -43,7 +43,7 @@ function setup() {
       returned.push(session);
     },
   };
-  const controller = new AwayController(deps);
+  const controller = new AwayController({ ...deps, ...overrides });
   return { controller, made, saved, persisted, returned, recordings: () => recordings };
 }
 
@@ -69,6 +69,31 @@ describe("AwayController", () => {
     expect(saved[0].away.watchedPaths).toEqual(["src/a.ts"]);
     expect(made).toHaveLength(1); // no tomó otra línea de base a los 20
     expect(saved[0].draft).toBe(made[0].draft); // ni otra foto del editor y git
+  });
+
+  it("si se cierra mientras guarda, no queda grabando ni persistiendo", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const persisted: Session[] = [];
+    const { controller, made } = setup({
+      saveSession: async (input) => {
+        await gate;
+        return makeSession({ trigger: input.trigger, away: { ...input.away } });
+      },
+      persist: async (session) => {
+        persisted.push(session);
+      },
+    });
+    const leaving = controller.leaveManual(undefined);
+    await vi.advanceTimersByTimeAsync(0);
+    await controller.dispose();
+    release();
+    await leaving;
+    made[0].log.add("src/a.ts");
+    await vi.advanceTimersByTimeAsync(FLUSH_MS * 3);
+    expect(made[0].stopped).toBe(true);
+    expect(persisted).toHaveLength(0);
+    expect(controller.activeSession).toBeUndefined();
   });
 
   it("si vuelve antes de la inactividad, la candidata se descarta", async () => {

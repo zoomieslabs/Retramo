@@ -1,5 +1,6 @@
 import { GitRunner } from "../git/exec";
 import { isObjectId } from "../git/objectId";
+import { redactTokens } from "../session/redact";
 import type { AwayChanges } from "./compute";
 
 export const MAX_DIFF_CHARS = 20_000;
@@ -11,6 +12,9 @@ const SECRET_PATTERNS = [
   /\.pem$/i,
   /\.key$/i,
   /(^|\/)id_(rsa|dsa|ecdsa|ed25519)[^/]*$/i,
+  /(^|\/)\.(npmrc|netrc|pypirc)$/i, // tokens de registros y de hosts
+  /\.(p12|pfx|keystore|jks)$/i,
+  /\.tfvars$/i,
   /credential/i,
   /secret/i,
 ];
@@ -26,6 +30,8 @@ export function looksSecret(path: string): boolean {
  *
  * - Sin borrados: su contenido no aporta al resumen y sería más código.
  * - Sin archivos que parecen secretos (.env, claves, credenciales).
+ * - Las claves con formato conocido (sk-..., ghp_..., AKIA...) se tapan
+ *   también dentro del código.
  * - `--no-ext-diff --no-textconv`: no ejecuta diffs ni filtros del repo.
  * - `--literal-pathspecs`: un nombre como ":(top)" es una ruta, no magia.
  * - Tope de 20.000 caracteres.
@@ -49,5 +55,6 @@ export async function collectDiffs(git: GitRunner, ref: string, files: AwayChang
   } catch {
     return "";
   }
+  diff = redactTokens(diff);
   return diff.length > MAX_DIFF_CHARS ? diff.slice(0, MAX_DIFF_CHARS) + TRUNCATED_MARK : diff;
 }

@@ -143,7 +143,7 @@ The first time it starts, Retramo asks once: *"Can we count how many times a wee
 If you say yes, once a week **exactly this** is sent, and nothing else:
 
 ```json
-{ "installId": "<random uuid>", "returnCount": 12, "version": "0.2.1" }
+{ "installId": "<random uuid>", "returnCount": 12, "version": "0.2.3" }
 ```
 
 You can change it at any time with `retramo.telemetry`. VS Code's `telemetry.telemetryLevel` is respected too: if it's set to `off`, nothing is sent even if you said yes.
