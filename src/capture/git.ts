@@ -18,7 +18,7 @@ export async function captureGit(workspaceRoot: string): Promise<Session["git"]>
   }
 
   const head = repository.state.HEAD;
-  const branch = head?.name ?? (head?.commit ? head.commit.slice(0, 8) : "(sin rama)");
+  const branch = head?.name ?? (head?.commit ? head.commit.slice(0, 8) : vscode.l10n.t("(detached)"));
 
   const modified = new Set<string>();
   for (const change of [

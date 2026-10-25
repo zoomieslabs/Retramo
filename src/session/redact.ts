@@ -59,11 +59,17 @@ const RULES: [RegExp, Replacement][] = [
 const MYSQL = /\b(?:mysql|mariadb|mysqldump|mysqladmin)\b/;
 const MYSQL_PASSWORD = /(\s-p)[^\s]+/g;
 
-export function redactCommand(command: string): string {
-  let out = command;
+/** Tapa solo las claves con formato conocido. Sirve para cualquier texto, no solo comandos. */
+export function redactTokens(text: string): string {
+  let out = text;
   for (const shape of TOKEN_SHAPES) {
     out = out.replace(shape, REDACTED);
   }
+  return out;
+}
+
+export function redactCommand(command: string): string {
+  let out = redactTokens(command);
   for (const [pattern, replacement] of RULES) {
     out = typeof replacement === "string" ? out.replace(pattern, replacement) : out.replace(pattern, replacement);
   }

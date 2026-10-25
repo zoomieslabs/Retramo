@@ -64,4 +64,12 @@ describe("AnthropicProvider", () => {
     const { fetchImpl } = fakeFetch({ type: "error", error: { type: "authentication_error" } }, 401);
     await expect(new AnthropicProvider("k", "{payload_json}", fetchImpl).summarize(payload)).rejects.toThrow(/HTTP 401/);
   });
+
+  it("si el error del proveedor repite la clave, no llega al log", async () => {
+    const key = "sk-ant-" + "a1B2c3D4".repeat(5); // armada por partes para los escáneres
+    const { fetchImpl } = fakeFetch({ error: { message: `invalid key ${key}` } }, 401);
+    const error = await new AnthropicProvider(key, "{payload_json}", fetchImpl).summarize(payload).catch((e: Error) => e);
+    expect(String(error)).toMatch(/HTTP 401/);
+    expect(String(error)).not.toContain(key);
+  });
 });

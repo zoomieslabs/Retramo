@@ -14,9 +14,9 @@ import {
  */
 
 export const OPENAI_MODEL = "gpt-4o-mini";
-export const ANTHROPIC_MODEL = "claude-opus-5";
+export const ANTHROPIC_MODEL = "claude-opus-5-5";
 const OPENAI_MAX_OUTPUT_TOKENS = 1024;
-// Opus 5 piensa por defecto y el pensamiento cuenta para max_tokens: un tope
+// Opus 5.5 siempre piensa y el pensamiento cuenta para max_tokens: un tope
 // bajo cortaría la respuesta. Solo se cobra lo que se genera.
 const ANTHROPIC_MAX_OUTPUT_TOKENS = 16_000;
 const TIMEOUT_MS = 30_000;

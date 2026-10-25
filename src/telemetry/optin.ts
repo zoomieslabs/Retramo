@@ -49,7 +49,11 @@ export class Telemetry {
     this.log.info(`telemetry: el usuario ${enabled ? "aceptó" : "rechazó"} el conteo semanal`);
   }
 
+  /** Solo cuenta con el sí del usuario: nada de lo anterior se manda después. */
   async recordReturn(): Promise<void> {
+    if (!this.enabled()) {
+      return;
+    }
     const count = this.context.globalState.get<number>(KEY_RETURN_COUNT, 0);
     await this.context.globalState.update(KEY_RETURN_COUNT, count + 1);
   }

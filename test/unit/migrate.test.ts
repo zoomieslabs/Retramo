@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { promises as fs } from "node:fs";
 import { migrateSession } from "../../src/session/migrate";
+import { clampIntent } from "../../src/session/model";
+import { REDACTED } from "../../src/session/redact";
 import { isObjectId } from "../../src/git/objectId";
 import { SessionStore } from "../../src/session/store";
 import { ulid } from "../../src/session/ulid";
@@ -36,6 +38,12 @@ describe("migración v1 -> v2", () => {
 
   it("la intención se recorta a 200 caracteres", () => {
     expect(migrateSession({ ...v1, note: "x".repeat(500) })!.intent).toHaveLength(200);
+  });
+
+  it("una clave pegada en la nota se tapa, también en sesiones viejas", () => {
+    const key = "sk-proj-" + "a1B2c3D4".repeat(5); // armada por partes para los escáneres
+    expect(clampIntent(`probar con ${key} mañana`)).toBe(`probar con ${REDACTED} mañana`);
+    expect(migrateSession({ ...v1, note: `usar ${key}` })!.intent).toBe(`usar ${REDACTED}`);
   });
 
   it("rechaza lo que no tiene forma de sesión", () => {

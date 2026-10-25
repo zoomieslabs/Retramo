@@ -214,6 +214,10 @@ export class AwayController {
   }
 
   private activate(session: Session, recording: AwayRecording | undefined, graceUntil: number): void {
+    if (this.disposed) {
+      recording?.stop(); // se cerró mientras se guardaba: la sesión ya está en disco
+      return;
+    }
     this.active = { session, recording, graceUntil, flushedRevision: recording?.log.revision ?? 0 };
     this.stopFlush();
     if (recording) {
